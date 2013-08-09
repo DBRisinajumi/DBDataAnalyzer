@@ -10,5 +10,5 @@ $Analyzer = new \DBRisinajumi\DBAnalizer\DBAnalyzer();
 
 $aGroups = $Analyzer->getGroupsList();
 var_dump($aGroups);
-$aSubGroups = $Analyzer->getSubGroupList("main_group");
+$aSubGroups = $Analyzer->getSubGroupList("test");
 var_dump($aSubGroups);

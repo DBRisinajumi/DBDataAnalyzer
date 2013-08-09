@@ -4,12 +4,16 @@ namespace DBRisinajumi\DBAnalizer;
 class DBAnalyzer
 {
     const TBL_NAME = 'db_analyzer';
-    
     /**
      * mysqli connection
      * @var object 
      */
     private $db;
+    /**
+     * errors from sql statements
+     * @var array 
+     */
+    private $aErrors = [];
 
     public function __construct(\mysqli $db)
     {
@@ -59,30 +63,39 @@ class DBAnalyzer
      */
     public function getGroupsList()
     {
-        $sSql = "SELECT `group` FROM ".TBL_NAME." WHERE hidden = 0";
+        $sSql = "SELECT `group` FROM ".self::TBL_NAME." WHERE hidden = 0";
         $oResult = $this->db->query($sSql);
         if ($oResult == 0) {
             return false;
         }
 
-        return $oResult->fetch_all();
+        return $oResult->fetch_all(MYSQLI_ASSOC);
     }
 
     /**
-     * returns list of subgroups for group
+     * returns subgroup data for group
      * 
      * @param string $sGroup
      * @return array $aReturn
      */
     public function getSubGroupList($sGroup)
     {
-        $sSql = "SELECT `subgroup` FROM ".TBL_NAME." WHERE hidden = 0 AND group = '".$this->db->escape($sGroup)."'";
+        $sSql = "
+        SELECT
+            `id`, `name`, `subgroup`, `sql_statement`, `comments`
+        FROM
+            ".self::TBL_NAME."
+        WHERE
+            hidden = 0 AND
+            `group` = '".$this->db->escape_string($sGroup)."'
+        ";
+        //echo $sSql;
         $oResult = $this->db->query($sSql);
-        if ($oResult == 0) {
+        if ($oResult->num_rows == 0) {
             return false;
         }
 
-        return $oResult->fetch_all();
+        return $oResult->fetch_all(MYSQLI_ASSOC);
     }
 
     /**
@@ -92,16 +105,21 @@ class DBAnalyzer
      */
     public function getExecCountGroup($sGroup)
     {
-        $sSql = "
-            SELECT
-                `id`, `name`, `subgroup`, `sql_statements`, `comments`
-            FROM
-                ".TBL_NAME."
-            WHERE
-                hidden = 0 AND group = '".$this->db->escape($sGroup)."'";
-        $oResult = $this->db->query($sSql);
-        if ($oResult == 0) {
+        $aSubGroupData = $this->getSubGroupList($sGroup);
+        if (empty($aSubGroupData)) {
             return false;
         }
+        foreach ($aSubGroupData as $nId => $aSubGroup) {
+            $oResult = $this->db->query($aSubGroup['sql_statement']);
+            if (!$oResult) {
+                $this->aErrors[] = $this->db->error;
+                $aSubGroupData[$nId]['error'] = $this->db->error;
+                $aSubGroupData[$nId]['num_rows'] = 0;
+            } else {
+                $aSubGroupData[$nId]['num_rows'] = $oResult->num_rows;
+            }
+        }
+
+        return $aSubGroupData;
     }
 }
