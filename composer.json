@@ -1,0 +1,17 @@
+{
+    "name": "DBRisinajumi/DbDataAnalyzer",
+    "description": "Analyze MySQL data for inconsistencies",
+    "keywords": ["MySQL","records","analyzer","constraints"],
+    "type": "library",
+    "license": "Apache",
+    "authors": [
+        {
+            "name": "Uldis Nelsons",
+            "email": "uldisnelsons@gmail.com"
+        },
+        {
+            "name": "Juris Malinens",
+            "email": "juris.malinens@gmail.com"
+        }
+    ]
+}
