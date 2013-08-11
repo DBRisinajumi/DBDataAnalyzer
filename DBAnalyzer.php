@@ -1,5 +1,5 @@
 <?php
-namespace DBRisinajumi\DBAnalizer;
+namespace DBRisinajumi\DBDataAnalizer;
 
 class DBAnalyzer
 {
@@ -13,7 +13,7 @@ class DBAnalyzer
      * errors from sql statements
      * @var array 
      */
-    private $aErrors = [];
+    private $aErrors = array();
 
     public function __construct(\mysqli $db)
     {
@@ -21,39 +21,79 @@ class DBAnalyzer
     }
 
     /**
-     * returns DB select result as array
+     * returns DB Analyzer record
      * 
-     * @param string $sGroup
-     * @param string $sSubGroup
+     * @param int $nId
      * @return array $aReturn
      */
-    public function getSelect($sGroup, $sSubGroup)
+    public function getSelect($nId)
     {
-        
+        $sSql = "
+        SELECT
+            `id`, `name`, `subgroup`, `sql_statement`, `comments`
+        FROM
+            ".self::TBL_NAME."
+        WHERE
+            hidden = 0 AND
+            `id` = '".$this->db->escape_string($nId)."'
+        LIMIT 1
+        ";
+        //echo $sSql;
+        $oAnalyzeResult = $this->db->query($sSql);
+        if ($oAnalyzeResult->num_rows == 0) {
+            return false;
+        }
+
+        return $oAnalyzeResult->fetch_assoc();
+    }
+    
+    /**
+     * returns DB select result as array
+     * 
+     * @param int $nId
+     * @return array $aReturn
+     */
+    public function getResult($nId)
+    {
+        $aRow = $this->getSelect($nId);
+        $oResult = $this->db->query($aRow['sql_statement']);
+
+        return $oResult;
     }
 
     /**
+     * returns vlibTemplate compatible array
      * 
-     * 
-     * @param string $sGroup
-     * @param string $sSubGroup
-     * @return string $sName
+     * @param array $aArr
+     * @return array
      */
-    public function getName($sGroup, $sSubGroup)
+    public function getArrForVlib($aArr)
     {
-        
+        $aReturn = array();
+        foreach ($aArr as $nId => $aResult) {
+            foreach ($aResult as $nId2 => $sValue) {
+                $aReturn[$nId]['columns'][$nId2]['value'] = $sValue;
+            }
+        }
+
+        return $aReturn;
     }
 
     /**
+     * returns array of fields for sql statement
      * 
-     * 
-     * @param string $sGroup
-     * @param string $sSubGroup
-     * @return string $sComment
+     * @param \mysqli object $oDbResult
+     * @return array
      */
-    public function getComment($sGroup, $sSubGroup)
+    public function fetchFields($oDbResult)
     {
-        
+        $aReturn = array();
+        $aFields = (array)$oDbResult->fetch_fields();
+        foreach ($aFields as $oField) {
+            $aReturn[]['name'] = $oField->name;
+        }
+
+        return $aReturn;
     }
 
     /**
@@ -118,6 +158,7 @@ class DBAnalyzer
             } else {
                 $aSubGroupData[$nId]['num_rows'] = $oResult->num_rows;
             }
+            unset($aSubGroupData[$nId]['sql_statement']);
         }
 
         return $aSubGroupData;
