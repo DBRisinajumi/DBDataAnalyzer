@@ -109,7 +109,7 @@ class DbDataAnalyzer
             return false;
         }
 
-        return $oResult->fetch_all(MYSQLI_ASSOC);
+        return $this->fetchAll($oResult, MYSQLI_ASSOC);
     }
 
     /**
@@ -135,7 +135,7 @@ class DbDataAnalyzer
             return false;
         }
 
-        return $oResult->fetch_all(MYSQLI_ASSOC);
+        return $this->fetchAll($oResult, MYSQLI_ASSOC);
     }
 
     /**
@@ -162,5 +162,22 @@ class DbDataAnalyzer
         }
 
         return $aSubGroupData;
+    }
+    
+    /**
+     * for compatibility with older php versions
+     * 
+     * @param mysqli_result object $oResult
+     * @param int $nResultType
+     * @return array
+     */
+    public function fetchAll($oResult, $nResultType = MYSQLI_ASSOC)
+    {
+        if (method_exists('mysqli_result', 'fetch_all')) // Compatibility layer with PHP < 5.3
+            $res = mysqli_fetch_all($oResult, $nResultType);
+        else
+            for ($res = array(); $tmp = mysqli_fetch_array($oResult, $nResultType);) $res[] = $tmp;
+
+        return $res;
     }
 }
