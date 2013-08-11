@@ -1,7 +1,7 @@
 <?php
 namespace DBRisinajumi\DBDataAnalizer;
 
-class DBAnalyzer
+class DbDataAnalyzer
 {
     const TBL_NAME = 'db_analyzer';
     /**
