@@ -14,7 +14,47 @@ class DbDataAnalyzer
      * @var array 
      */
     private $aErrors = array();
-
+    
+    private $aMySqliNumericTypes = array(
+        MYSQLI_TYPE_TINY,
+        MYSQLI_TYPE_SHORT,
+        MYSQLI_TYPE_LONG,
+        MYSQLI_TYPE_FLOAT,
+        MYSQLI_TYPE_DOUBLE,
+        MYSQLI_TYPE_LONGLONG,
+        MYSQLI_TYPE_INT24,
+        MYSQLI_TYPE_NEWDECIMAL,
+        MYSQLI_TYPE_DECIMAL,
+   );
+    
+   /*MYSQL_TYPE_DECIMAL,
+   MYSQLI_TYPE_TINY,
+   MYSQLI_TYPE_SHORT,
+   MYSQLI_TYPE_LONG,
+   MYSQLI_TYPE_FLOAT,
+   MYSQLI_TYPE_DOUBLE,
+   MYSQLI_TYPE_NULL,
+   MYSQLI_TYPE_TIMESTAMP,
+   MYSQLI_TYPE_LONGLONG,
+   MYSQLI_TYPE_INT24,
+   MYSQLI_TYPE_DATE, 
+   MYSQLI_TYPE_TIME,
+   MYSQLI_TYPE_DATETIME, 
+   MYSQLI_TYPE_YEAR,
+   MYSQLI_TYPE_NEWDATE, 
+   MYSQLI_TYPE_VARCHAR,
+   MYSQLI_TYPE_BIT,
+   MYSQLI_TYPE_NEWDECIMAL=246,
+   MYSQLI_TYPE_ENUM=247,
+   MYSQLI_TYPE_SET=248,
+   MYSQLI_TYPE_TINY_BLOB=249,
+   MYSQLI_TYPE_MEDIUM_BLOB=250,
+   MYSQLI_TYPE_LONG_BLOB=251,
+   MYSQLI_TYPE_BLOB=252,
+   MYSQLI_TYPE_VAR_STRING=253,
+   MYSQLI_TYPE_STRING=254,
+   MYSQLI_TYPE_GEOMETRY=255*/
+    
     public function __construct(\mysqli $db)
     {
         $this->db = $db;
@@ -64,15 +104,20 @@ class DbDataAnalyzer
     /**
      * returns vlibTemplate compatible array
      * 
-     * @param array $aArr
+     * @param array $aArr - mysqli data
+     * @param array $aFields - mysqli fields
      * @return array
      */
-    public function getArrForVlib($aArr)
+    public function getArrForVlib($aArr, $aFields)
     {
         $aReturn = array();
         foreach ($aArr as $nId => $aResult) {
             foreach ($aResult as $nId2 => $sValue) {
-                $aReturn[$nId]['columns'][$nId2]['value'] = $sValue;
+                $aReturn[$nId]['columns'][$nId2] = array(
+                    'value' => $sValue,
+                    'is_numeric' => $aFields[$nId2]['is_numeric'],
+                    'type' => $aFields[$nId2]['type']
+                );
             }
         }
 
@@ -90,10 +135,19 @@ class DbDataAnalyzer
         $aReturn = array();
         $aFields = (array)$oDbResult->fetch_fields();
         foreach ($aFields as $oField) {
-            $aReturn[]['name'] = $oField->name;
+            $aReturn[] = array(
+                'name' => $oField->name,
+                'type' => $oField->type,
+                'is_numeric' => $this->isMysqliTypeNumeric($oField->type)
+            );
         }
 
         return $aReturn;
+    }
+    
+    private function isMysqliTypeNumeric($nType)
+    {
+        return in_array($nType, $this->aMySqliNumericTypes);
     }
 
     /**
